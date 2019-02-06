@@ -12,7 +12,7 @@ from collections import defaultdict
 
 import numpy as np
 from keras import backend as K
-from keras.layers import (Conv2D, Input, ZeroPadding2D, Add,
+from keras.layers import (Conv2D, Input, ZeroPadding2D, Add, Reshape,
                           UpSampling2D, MaxPooling2D, Concatenate)
 from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.normalization import BatchNormalization
@@ -85,7 +85,7 @@ def _main(args):
     cfg_parser.read_file(unique_config_file)
 
     print('Creating Keras model.')
-    input_layer = Input(shape=(None, None, 3))
+    input_layer = Input(shape=(416, 416, 3))
     prev_layer = input_layer
     all_layers = []
 
@@ -111,8 +111,6 @@ def _main(args):
             prev_layer_shape = K.int_shape(prev_layer)
 
             weights_shape = (size, size, prev_layer_shape[-1], filters)
-            darknet_w_shape = (filters, weights_shape[2], size, size)
-            weights_size = np.product(weights_shape)
 
             print('conv2d', 'bn'
                   if batch_normalize else '  ', activation, weights_shape)
@@ -137,21 +135,6 @@ def _main(args):
                     bn_weights[2]  # running var
                 ]
 
-            conv_weights = np.ndarray(
-                shape=darknet_w_shape,
-                dtype='float32',
-                buffer=weights_file.read(weights_size * 4))
-            count += weights_size
-
-            # DarkNet conv_weights are serialized Caffe-style:
-            # (out_dim, in_dim, height, width)
-            # We would like to set these to Tensorflow order:
-            # (height, width, in_dim, out_dim)
-            conv_weights = np.transpose(conv_weights, [2, 3, 1, 0])
-            conv_weights = [conv_weights] if batch_normalize else [
-                conv_weights, conv_bias
-            ]
-
             # Handle activation.
             act_fn = None
             if activation == 'leaky':
@@ -170,7 +153,6 @@ def _main(args):
                 strides=(stride, stride),
                 kernel_regularizer=l2(weight_decay),
                 use_bias=not batch_normalize,
-                weights=conv_weights,
                 activation=act_fn,
                 padding=padding))(prev_layer)
 
@@ -209,6 +191,13 @@ def _main(args):
                     padding='same')(prev_layer))
             prev_layer = all_layers[-1]
 
+        elif section.startswith('reorg'):
+            all_layers.append(
+                Reshape(
+                    (13, 13, 256)
+                )(prev_layer))
+            prev_layer = all_layers[-1]
+
         elif section.startswith('shortcut'):
             index = int(cfg_parser[section]['from'])
             activation = cfg_parser[section]['activation']
@@ -228,6 +217,9 @@ def _main(args):
             prev_layer = all_layers[-1]
 
         elif section.startswith('net'):
+            pass
+
+        elif section.startswith('region'):
             pass
 
         else:
