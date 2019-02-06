@@ -194,7 +194,7 @@ def _main(args):
         elif section.startswith('reorg'):
             all_layers.append(
                 Reshape(
-                    (13, 13, 256)
+                    (13, 13, -1)
                 )(prev_layer))
             prev_layer = all_layers[-1]
 
