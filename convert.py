@@ -100,8 +100,8 @@ def _main(args):
             size = int(cfg_parser[section]['size'])
             stride = int(cfg_parser[section]['stride'])
             pad = int(cfg_parser[section]['pad'])
-            activation = cfg_parser[section]['activation']
-            batch_normalize = 'batch_normalize' in cfg_parser[section]
+            activation = 'linear'
+            batch_normalize = False
 
             padding = 'same' if pad == 1 and stride == 1 else 'valid'
 
