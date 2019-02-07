@@ -246,7 +246,7 @@ def _main(args):
         print('Warning: {} unused weights'.format(remaining_weights))
 
     if args.plot_model:
-        plot(model, to_file='{}.eps'.format(output_root), show_shapes=True)
+        plot(model, to_file='{}.eps'.format(output_root), show_shapes=True, show_layer_names=False)
         print('Saved model plot to {}.eps'.format(output_root))
 
 if __name__ == '__main__':
